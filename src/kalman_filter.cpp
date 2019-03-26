@@ -28,18 +28,11 @@ void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
 }
 
 void KalmanFilter::Predict() {
-  /**
-   * TODO: predict the state
-   */
-
   x_ = F_ * x_; // + u
   P_ = F_ * P_ * F_.transpose() + Q_;
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
-  /**
-   * TODO: update the state by using Kalman Filter equations
-   */
   MatrixXd I; // Identity matrix
   VectorXd y;
   MatrixXd S;
@@ -56,9 +49,6 @@ void KalmanFilter::Update(const VectorXd &z) {
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
-  /**
-   * TODO: update the state by using Extended Kalman Filter equations
-   */
   MatrixXd I; // Identity matrix
   VectorXd y;
   MatrixXd S;
@@ -79,7 +69,7 @@ VectorXd KalmanFilter::RadarMeasurement(const VectorXd &x_state) {
 
    double rho = sqrt(px*px + py*py);
    double phi;
-   if (abs(px) <= epsilon) {
+   if (fabs(px) <= epsilon) {
       if (py < 0) {
          phi = - M_PI / 2;
       } else {
@@ -87,17 +77,14 @@ VectorXd KalmanFilter::RadarMeasurement(const VectorXd &x_state) {
       }
    } else {
      phi = atan2(py, px);
-      // double phi = atan(abs(py)/abs(px));
-      // if (px < 0) {
-      //   phi = M_PI - phi; 
-      // }
-      // if (py < 0) {
-      //   phi = -phi;
-      // }
+     while (phi > M_PI) {
+        phi -= 2 * M_PI;
+     }
+     while (phi < -M_PI) {
+        phi += 2 * M_PI;
+     }
    }
    double rhodot = (px*vx + py*vy) / (rho + epsilon);
-
-   printf("rho: %f phi: %f rhodot: %f\n", rho, phi, rhodot);
 
    VectorXd meas = VectorXd(3);
    meas << rho, phi, rhodot;
