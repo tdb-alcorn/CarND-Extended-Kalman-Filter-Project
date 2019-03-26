@@ -46,6 +46,11 @@ class KalmanFilter {
    */
   void UpdateEKF(const Eigen::VectorXd &z);
 
+  /**
+   * Projects state vector into radar measurement space.
+   */
+  Eigen::VectorXd RadarMeasurement(const Eigen::VectorXd &x_state);
+
   // state vector
   Eigen::VectorXd x_;
 

@@ -1,7 +1,12 @@
+#define _USE_MATH_DEFINES
+
 #include "kalman_filter.h"
+#include "math.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+
+const double epsilon = 0.00001;
 
 /* 
  * Please note that the Eigen library does not initialize 
@@ -26,16 +31,75 @@ void KalmanFilter::Predict() {
   /**
    * TODO: predict the state
    */
+
+  x_ = F_ * x_; // + u
+  P_ = F_ * P_ * F_.transpose() + Q_;
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
   /**
    * TODO: update the state by using Kalman Filter equations
    */
+  MatrixXd I; // Identity matrix
+  VectorXd y;
+  MatrixXd S;
+  MatrixXd K;
+
+  I = MatrixXd::Identity(P_.rows(), P_.cols());
+
+  y = z - H_ * x_;
+  S = H_ * P_ * H_.transpose() + R_;
+  K = P_ * H_.transpose() * S.inverse();
+  
+  x_ = x_ + K * y;
+  P_ = (I - K * H_) * P_;
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
   /**
    * TODO: update the state by using Extended Kalman Filter equations
    */
+  MatrixXd I; // Identity matrix
+  VectorXd y;
+  MatrixXd S;
+  MatrixXd K;
+
+  I = MatrixXd::Identity(P_.rows(), P_.cols());
+
+  y = z - RadarMeasurement(x_);
+  S = H_ * P_ * H_.transpose() + R_;
+  K = P_ * H_.transpose() * S.inverse();
+  
+  x_ = x_ + K * y;
+  P_ = (I - K * H_) * P_;
+}
+
+VectorXd KalmanFilter::RadarMeasurement(const VectorXd &x_state) {
+   double px = x_state(0), py = x_state(1), vx = x_state(2), vy = x_state(3);
+
+   double rho = sqrt(px*px + py*py);
+   double phi;
+   if (abs(px) <= epsilon) {
+      if (py < 0) {
+         phi = - M_PI / 2;
+      } else {
+         phi = M_PI / 2;
+      }
+   } else {
+     phi = atan2(py, px);
+      // double phi = atan(abs(py)/abs(px));
+      // if (px < 0) {
+      //   phi = M_PI - phi; 
+      // }
+      // if (py < 0) {
+      //   phi = -phi;
+      // }
+   }
+   double rhodot = (px*vx + py*vy) / (rho + epsilon);
+
+   printf("rho: %f phi: %f rhodot: %f\n", rho, phi, rhodot);
+
+   VectorXd meas = VectorXd(3);
+   meas << rho, phi, rhodot;
+   return meas;
 }
