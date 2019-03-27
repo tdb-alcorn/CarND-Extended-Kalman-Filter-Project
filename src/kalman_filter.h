@@ -49,7 +49,7 @@ class KalmanFilter {
   /**
    * Projects state vector into radar measurement space.
    */
-  Eigen::VectorXd RadarMeasurement(const Eigen::VectorXd &x_state);
+  Eigen::VectorXd RadarMeasurement(const Eigen::VectorXd &z, const Eigen::VectorXd &x_state);
 
   // state vector
   Eigen::VectorXd x_;

@@ -37,12 +37,14 @@ void KalmanFilter::Update(const VectorXd &z) {
   VectorXd y;
   MatrixXd S;
   MatrixXd K;
+  MatrixXd PH;
 
   I = MatrixXd::Identity(P_.rows(), P_.cols());
+  PH = P_ * H_.transpose();
 
   y = z - H_ * x_;
-  S = H_ * P_ * H_.transpose() + R_;
-  K = P_ * H_.transpose() * S.inverse();
+  S = H_ * PH + R_;
+  K = PH * S.inverse();
   
   x_ = x_ + K * y;
   P_ = (I - K * H_) * P_;
@@ -53,18 +55,20 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   VectorXd y;
   MatrixXd S;
   MatrixXd K;
+  MatrixXd PH;
 
   I = MatrixXd::Identity(P_.rows(), P_.cols());
+  PH = P_ * H_.transpose();
 
-  y = z - RadarMeasurement(x_);
-  S = H_ * P_ * H_.transpose() + R_;
-  K = P_ * H_.transpose() * S.inverse();
+  y = RadarMeasurement(z, x_);
+  S = H_ * PH + R_;
+  K = PH * S.inverse();
   
   x_ = x_ + K * y;
   P_ = (I - K * H_) * P_;
 }
 
-VectorXd KalmanFilter::RadarMeasurement(const VectorXd &x_state) {
+VectorXd KalmanFilter::RadarMeasurement(const VectorXd &z, const VectorXd &x_state) {
    double px = x_state(0), py = x_state(1), vx = x_state(2), vy = x_state(3);
 
    double rho = sqrt(px*px + py*py);
@@ -77,16 +81,19 @@ VectorXd KalmanFilter::RadarMeasurement(const VectorXd &x_state) {
       }
    } else {
      phi = atan2(py, px);
-     while (phi > M_PI) {
-        phi -= 2 * M_PI;
-     }
-     while (phi < -M_PI) {
-        phi += 2 * M_PI;
-     }
    }
    double rhodot = (px*vx + py*vy) / (rho + epsilon);
 
    VectorXd meas = VectorXd(3);
    meas << rho, phi, rhodot;
-   return meas;
+
+   VectorXd y = z - meas;
+   while (y(1) > M_PI) {
+      y(1) -= 2 * M_PI;
+   }
+   while (y(1) < -M_PI) {
+      y(1) += 2 * M_PI;
+   }
+
+   return y;
 }
